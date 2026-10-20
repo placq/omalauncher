@@ -44,7 +44,9 @@ tests = out / "tests"
 
 def compile_sources(paths, target, extra=""):
     print(f"Compiling {target.name}", flush=True)
-    sources = sorted(str(p) for folder in paths for p in (root / folder).rglob("*.kt"))
+    sources = sorted(str(p) for folder in paths for p in (
+        [(root / folder)] if (root / folder).is_file() else (root / folder).rglob("*.kt")
+    ))
     friend = [f"-Xfriend-paths={classes}"] if extra else []
     subprocess.run([
         "java", "-Xmx1536m", "-cp", classpath,
@@ -57,17 +59,23 @@ def compile_sources(paths, target, extra=""):
 if "--skip-compile" not in sys.argv:
     compile_sources(["owl/src/main/kotlin", "owl/src/cli/kotlin"], classes)
     compile_sources(["owl/src/test/kotlin"], tests, ":" + str(classes))
+    compile_sources([
+        "app/src/main/kotlin/dev/omalauncher/linux/EmbeddedAppCommand.kt",
+        "app/src/main/kotlin/dev/omalauncher/linux/EmbeddedAppProcess.kt",
+        "app/src/test/kotlin/dev/omalauncher/linux/EmbeddedAppTest.kt",
+    ], out / "app-tests", ":" + str(classes))
 test_classes = [
     "dev.omalauncher.widgets.lang.LangTest",
-    "dev.omalauncher.widgets.lang.GbaTest",
+    "dev.omalauncher.widgets.lang.LinuxAppTest",
     "dev.omalauncher.widgets.lang.AppSearchTest",
     "dev.omalauncher.widgets.market.ShareTest",
     "dev.omalauncher.widgets.market.MarketTest",
     "dev.omalauncher.widgets.market.SubmitTest",
 ]
-runtime = f"{classes}:{tests}:{classpath}"
+runtime = f"{classes}:{tests}:{out / 'app-tests'}:{classpath}"
+test_classes.append("dev.omalauncher.linux.EmbeddedAppTest")
 subprocess.run(["java", "-cp", runtime, "org.junit.runner.JUnitCore", *test_classes], check=True, cwd=root / "owl")
 subprocess.run([
     "java", "-cp", runtime, "dev.omalauncher.widgets.cli.MainKt", "check",
-    "prototype/pocket-gba.owl",
+    "prototype/linux-app.owl",
 ], check=True, cwd=root)

@@ -98,7 +98,6 @@ import dev.omalauncher.ui.LauncherStyle
 import dev.omalauncher.ui.Palette
 import dev.omalauncher.ui.frame
 import dev.omalauncher.ui.TerminalView
-import dev.omalauncher.ui.GbaView
 import dev.omalauncher.widgets.lang.Action
 import dev.omalauncher.widgets.lang.Builtins
 import dev.omalauncher.widgets.lang.Env
@@ -658,11 +657,13 @@ private fun Element(
         "Spacer" -> Spacer(mod)
         "Slider" -> SliderNode(p, mod, sized)
         "Input" -> InputNode(p, mod, sized)
-        "Gba" -> {
-            val rom = p.observe("rom")
-            if (rom != null && rom != Null && rom.toString().isNotBlank()) {
-                val term = remember(el, rom) { inst.terminal(el, rom.toString(), null, game = true) }
-                GbaView(term, mod.then(if (sized) Modifier else Modifier.fillMaxSize()))
+        "LinuxApp" -> {
+            val command = p.observe("command")
+            val appId = p.observe("appId")
+            // A command depending on a source waits for that source, like Terminal.
+            if (command != null && command != Null && appId != Null) {
+                val term = remember(el, command, appId) { inst.linuxApp(el, command.toString(), appId?.toString()) }
+                TerminalView(term, mod.then(if (sized) Modifier else Modifier.fillMaxSize()))
             }
         }
         "Terminal" -> {

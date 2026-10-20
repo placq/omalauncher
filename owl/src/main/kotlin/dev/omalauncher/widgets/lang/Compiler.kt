@@ -795,10 +795,14 @@ class Compiler private constructor(
             }
             guest = true
         }
-        if (n.type == "Gba") {
-            if ("rom" !in props) fail("Gba needs rom: an absolute Linux path to a GBA ROM", n.pos)
+        if (n.type == "LinuxApp") {
+            val command = props["command"] ?: fail("LinuxApp needs command: a foreground Wayland program", n.pos)
+            if (command.const?.toString()?.isBlank() == true) fail("LinuxApp command must not be blank", n.pos)
+            listCommand(body.props.first { it.name == "command" }.value, command, scope, "LinuxApp command")
+            props["appId"]?.const?.toString()?.let {
+                if (!it.matches(Regex("[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}"))) fail("LinuxApp appId must be a non-empty Wayland app ID", n.pos)
+            }
             guest = true
-            commands += "mgba (embedded GBA emulator; ROM path is shell-quoted)"
         }
         if (n.type == "Image") body.props.firstOrNull { it.name == "src" }?.let { webFile(it.value, scope, "image") }
         // A shader animates only if its code reads `time`; code that's worked out at run time might.

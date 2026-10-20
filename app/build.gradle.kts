@@ -56,11 +56,12 @@ android {
     }
 
     buildTypes {
-        create("gba") {
+        // A separate app/data directory for testing without replacing the user's launcher.
+        create("embedded") {
             initWith(getByName("debug"))
-            applicationIdSuffix = ".gba"
-            versionNameSuffix = "-gba-prototype"
-            manifestPlaceholders["launcherLabel"] = "Pocket GBA Prototype"
+            applicationIdSuffix = ".embedded"
+            versionNameSuffix = "-embedded-prototype"
+            manifestPlaceholders["launcherLabel"] = "Linux Face Prototype"
             matchingFallbacks += "debug"
         }
         release {
@@ -71,15 +72,15 @@ android {
         }
     }
 
-    sourceSets.getByName("gba").assets.srcDir(layout.buildDirectory.dir("generated/gba-assets").get().asFile)
+    sourceSets.getByName("embedded").assets.srcDir(layout.buildDirectory.dir("generated/embedded-assets").get().asFile)
 }
 
-// Seed the prototype face only in the isolated test app, never in normal builds.
-val gbaFaceAssets = tasks.register<Copy>("generateGbaFaceAssets") {
-    from(rootProject.file("prototype/pocket-gba.owl"))
-    into(layout.buildDirectory.dir("generated/gba-assets/widgets"))
+// Only the test APK seeds the demo; normal builds expose the generic node without adding a face.
+val embeddedFaceAssets = tasks.register<Copy>("generateEmbeddedFaceAssets") {
+    from(rootProject.file("prototype/linux-app.owl"))
+    into(layout.buildDirectory.dir("generated/embedded-assets/widgets"))
 }
-tasks.matching { it.name == "mergeGbaAssets" }.configureEach { dependsOn(gbaFaceAssets) }
+tasks.matching { it.name == "mergeEmbeddedAssets" }.configureEach { dependsOn(embeddedFaceAssets) }
 
 // ExamplesTest reads the widget examples and the README from here, so editing them reruns it.
 tasks.withType<Test>().configureEach { inputs.dir("src/main/assets/widgets") }

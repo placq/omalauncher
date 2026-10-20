@@ -1,7 +1,14 @@
-name: GBA prototype APK
+name: Linux face prototype APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'owl/**'
+      - 'prototype/**'
+      - '.github/workflows/embedded-prototype.yml'
 
 permissions:
   contents: read
@@ -25,17 +32,20 @@ jobs:
       - name: Include Linux runtime
         run: ./scripts/fetch-proot.sh
       - name: Test and build
-        run: ./gradlew :owl:test :app:testDebugUnitTest :owl:owlJar :app:assembleGba
+        run: ./gradlew :owl:test :app:testDebugUnitTest :owl:owlJar :app:assembleEmbedded :app:lintDebug
       - name: Verify isolated application ID
         run: |
-          apk=app/build/outputs/apk/gba/app-gba.apk
+          apk=app/build/outputs/apk/embedded/app-embedded.apk
           package=$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$apk")
-          test "$package" = "dev.omalauncher.gba"
-      - name: Check prototype face
-        run: java -jar owl/build/cli/owl.jar check prototype/pocket-gba.owl
+          test "$package" = "dev.omalauncher.embedded"
+      - name: Check demo face
+        run: java -jar owl/build/cli/owl.jar check prototype/linux-app.owl
+      - name: Check self-contained demo
+        run: python prototype/test-demo.py
       - uses: actions/upload-artifact@v4
         with:
-          name: pocket-gba-prototype
+          name: linux-face-prototype
           path: |
-            app/build/outputs/apk/gba/*.apk
+            app/build/outputs/apk/embedded/*.apk
             prototype/
+          if-no-files-found: error

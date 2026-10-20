@@ -37,7 +37,7 @@ internal val KINDS: Map<String, Kind> =
         "Spacer" to Kind(emptySet(), Children.NONE),
         // owl 2: a live terminal (foot) inside the tile.
         "Terminal" to Kind(setOf("command", "fontSize"), Children.NONE),
-        "Gba" to Kind(setOf("rom"), Children.NONE),
+        "LinuxApp" to Kind(setOf("command", "appId"), Children.NONE),
         // owl 4: input.
         "Slider" to Kind(setOf("value", "min", "max", "step", "color", "track", "live"), Children.NONE),
         "Input" to Kind(setOf("text", "placeholder", "color", "fontSize", "clear", "focus", "underline"), Children.NONE),
@@ -91,7 +91,7 @@ internal val DRAW_NAMED = setOf("fill", "stroke", "width", "cap", "radius", "clo
 
 /** What needs a newer language than 1, with the version: using one without `meta { owl: N }` is an error. */
 internal val SINCE =
-    mapOf("Terminal" to 2, "sprite" to 3) +
+    mapOf("Terminal" to 2, "sprite" to 3, "LinuxApp" to 13) +
         listOf("Slider", "Input", "file", "android.notifications", "android.volume", "volume", "notification", "every", "at", "when", "on").associateWith { 4 } +
         // owl 5: a full-screen view of the widget.
         listOf("screen", "close", "screenWidth", "screenHeight", "optional", "linux", "android.system").associateWith { 5 } +
@@ -121,8 +121,7 @@ internal val SINCE =
         listOf(PANEL_FILE, QUERY, "onKey", "android.drawer", "appAction", "workApps", "shortcuts", APP_STATUS_BAR).associateWith { 11 } +
         listOf("Column.lazy", "Grid.lazy", "Column.reverse", "Grid.reverse", "Image.label", "Text.minLines", "rank", "strongMatch", "chunk").associateWith { 11 } +
         // owl 12: how much of an app's top a camera cutout covers, once it hides the status bar.
-        mapOf("screenTop" to 12) +
-        mapOf("Gba" to 13)
+        mapOf("screenTop" to 12)
 
 internal const val FACE_FILE = "face \"…\" { }"
 

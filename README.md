@@ -89,3 +89,11 @@ settings › licenses.
 
 Omalauncher is an independent project and is not affiliated with or endorsed
 by Omarchy, Arch Linux, or the makers of the coding agents it installs.
+
+## Experimental embedded Linux windows
+
+This fork is currently focused on the generic OWL `LinuxApp` node, which embeds
+a foreground Wayland program directly in a face or widget. See
+[the prototype guide](prototype/README.md) for the API, non-game demo, isolated
+APK build and required device checks. The earlier GBA experiment is kept in
+branch `archive/gba-prototype`; it is not part of the current implementation.

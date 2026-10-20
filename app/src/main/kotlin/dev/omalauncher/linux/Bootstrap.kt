@@ -176,21 +176,7 @@ class Bootstrap(
             Step("keymap-1", Stage.Packages, "Compiling keymap", network = false, isDone = { proot.keymap.exists() }) { compileKeymap() },
             Step("cliamp-$CLIAMP_VERSION", Stage.Packages, "Installing cliamp", network = true) { installCliamp() },
             // Omarchy's themes were a step here ("omarchy-<ref>") until Linux became optional; ThemeStore fetches them now.
-        ) + if (context.packageName == "dev.omalauncher.gba") {
-            listOf(
-                Step("gba-prototype-packages-1", Stage.Packages, "Installing Pocket GBA dependencies", network = true) {
-                    // bwrap is a launcher-owned bind mount. mGBA's transitive
-                    // bubblewrap package must not replace the proot-compatible shim.
-                    val config = proot.hostFile("/etc/pacman.conf")
-                    val text = config.readText()
-                    if (!text.lineSequence().any { it.startsWith("NoExtract") && it.contains("usr/bin/bwrap") }) {
-                        config.writeText(text.replace("[options]", "[options]\nNoExtract = usr/bin/bwrap"))
-                    }
-                    guest("pacman -S --needed --noconfirm --overwrite usr/bin/bwrap mgba-sdl lua python bash coreutils")
-                    guest("mkdir -p ~/Games/GBA")
-                },
-            )
-        } else emptyList()
+        )
 
     private fun Step.done() = isDone?.invoke() ?: (id in journal)
 
