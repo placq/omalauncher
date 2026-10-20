@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 25
@@ -21,7 +21,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libarchive-tools
           ndk=$(sed -n 's/^NDK_VERSION=//p' scripts/fetch-proot.sh)
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-37" "cmake;3.22.1"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$ndk" "platforms;android-37.0" "cmake;3.22.1"
       - name: Include Linux runtime
         run: ./scripts/fetch-proot.sh
       - name: Test and build
