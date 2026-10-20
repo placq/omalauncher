@@ -28,7 +28,7 @@ The `:owl` module needs a Java 17 toolchain, which Gradle can provision.
 
 ```sh
 ./scripts/fetch-proot.sh
-./gradlew :owl:test :app:testGbaUnitTest :owl:owlJar :app:assembleGba
+./gradlew :owl:test :app:testDebugUnitTest :owl:owlJar :app:assembleGba
 java -jar owl/build/cli/owl.jar check prototype/pocket-gba.owl
 ```
 

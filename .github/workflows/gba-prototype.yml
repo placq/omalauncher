@@ -25,7 +25,7 @@ jobs:
       - name: Include Linux runtime
         run: ./scripts/fetch-proot.sh
       - name: Test and build
-        run: ./gradlew :owl:test :app:testGbaUnitTest :owl:owlJar :app:assembleGba
+        run: ./gradlew :owl:test :app:testDebugUnitTest :owl:owlJar :app:assembleGba
       - name: Verify isolated application ID
         run: |
           apk=app/build/outputs/apk/gba/app-gba.apk
