@@ -1,0 +1,66 @@
+face "pocket gba" {
+  meta {
+    owl: 12
+    description: "Prototype GBA library with an embedded mGBA window and multitouch controls; requires a patched launcher"
+    version: "0.1"
+    license: "MIT"
+    category: "games"
+  }
+  page: -1
+  statusBar: false
+  padding: 0
+  background: "#39325f"
+  requires { pacman: ["mgba-sdl", "lua", "python", "bash", "coreutils"] }
+
+  state folder = "~/Games/GBA" persist
+  state selected = ""
+  source library = cmd("""python -c '
+import json, pathlib, sys
+try:
+    folder = pathlib.Path(sys.argv[1]).expanduser().resolve()
+    if not folder.is_dir():
+        raise ValueError("Folder nie istnieje: " + str(folder))
+    items = []
+    for p in folder.iterdir():
+        if p.is_file() and p.suffix.lower() == ".gba":
+            items.append({"name": p.stem, "path": str(p)})
+    print(json.dumps({"items": sorted(items, key=lambda x: x["name"].lower())[:200], "error": ""}))
+except (OSError, ValueError) as e:
+    print(json.dumps({"items": [], "error": str(e)}))
+' ${sh(folder)}""") every 30s json
+
+  Column {
+    fill: true
+    gap: 8
+    padding: 12
+    if selected == "" {
+      Text { text: "POCKET GBA"; style: title; color: "#ffffff" }
+      Text { text: "Biblioteka ROM-ów · prototyp"; color: "#d2cde6" }
+      Input { text: folder; placeholder: "Folder z plikami .gba"; onSubmit: folder = trim(value) }
+      Row {
+        Button { text: "Odśwież"; onTap: refresh() }
+        Button { text: "Utwórz folder domyślny"; onTap: run("mkdir -p ~/Games/GBA") }
+      }
+      Text { text: library == null ? "Wczytywanie…" : library.error != "" ? library.error : "${len(library.items)} gier"; color: "#d2cde6" }
+      Column {
+        weight: 1
+        scroll: true
+        gap: 8
+        for game in library.items ?? [] key game.path {
+          Button { text: game.name; onTap: selected = game.path }
+        }
+        if library != null && len(library.items) == 0 {
+          Text { text: "Dodaj własne pliki .gba do wybranego folderu. ROM-y nie są dołączone."; color: "#ffffff" }
+        }
+      }
+    } else {
+      Button { text: "← Biblioteka (pauza)"; onTap: selected = "" }
+      Column {
+        weight: 1
+        scroll: true
+        Gba { rom: selected; height: 660; fill: width }
+      }
+    }
+    Spacer { height: screenInset }
+  }
+}

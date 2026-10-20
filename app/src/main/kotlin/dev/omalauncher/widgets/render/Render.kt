@@ -98,6 +98,7 @@ import dev.omalauncher.ui.LauncherStyle
 import dev.omalauncher.ui.Palette
 import dev.omalauncher.ui.frame
 import dev.omalauncher.ui.TerminalView
+import dev.omalauncher.ui.GbaView
 import dev.omalauncher.widgets.lang.Action
 import dev.omalauncher.widgets.lang.Builtins
 import dev.omalauncher.widgets.lang.Env
@@ -657,6 +658,13 @@ private fun Element(
         "Spacer" -> Spacer(mod)
         "Slider" -> SliderNode(p, mod, sized)
         "Input" -> InputNode(p, mod, sized)
+        "Gba" -> {
+            val rom = p.observe("rom")
+            if (rom != null && rom != Null && rom.toString().isNotBlank()) {
+                val term = remember(el, rom) { inst.terminal(el, rom.toString(), null, game = true) }
+                GbaView(term, mod.then(if (sized) Modifier else Modifier.fillMaxSize()))
+            }
+        }
         "Terminal" -> {
             val command = p.observe("command")
             val fontSize = p.observe("fontSize")?.num()

@@ -24,7 +24,7 @@ class Compiler private constructor(
          * instead of failing on what they don't know. Bump it with every
          * addition a widget could depend on: nodes, properties, builtins.
          */
-        const val LEVEL = 11
+        const val LEVEL = 12
         private const val MAX_ASSET_BYTES = 2 shl 20
 
         /** Pages as far out as a file can ask for; past Int's range, the pages either side of them would wrap. */
@@ -794,6 +794,11 @@ class Compiler private constructor(
                 listCommand(body.props.first { it.name == "command" }.value, command, scope, "Terminal command")
             }
             guest = true
+        }
+        if (n.type == "Gba") {
+            if ("rom" !in props) fail("Gba needs rom: an absolute Linux path to a GBA ROM", n.pos)
+            guest = true
+            commands += "mgba (embedded GBA emulator; ROM path is shell-quoted)"
         }
         if (n.type == "Image") body.props.firstOrNull { it.name == "src" }?.let { webFile(it.value, scope, "image") }
         // A shader animates only if its code reads `time`; code that's worked out at run time might.

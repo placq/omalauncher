@@ -293,7 +293,8 @@ class WidgetServices(
     override fun terminal(
         command: String?,
         fontSize: Double?,
-    ) = runtime.terminals.create(command, fontSize)
+        game: Boolean,
+    ) = runtime.terminals.create(command, fontSize, game)
 
     override fun fileUpdates(path: String) = watchFile(guestFile(path))
 

@@ -37,6 +37,7 @@ internal val KINDS: Map<String, Kind> =
         "Spacer" to Kind(emptySet(), Children.NONE),
         // owl 2: a live terminal (foot) inside the tile.
         "Terminal" to Kind(setOf("command", "fontSize"), Children.NONE),
+        "Gba" to Kind(setOf("rom"), Children.NONE),
         // owl 4: input.
         "Slider" to Kind(setOf("value", "min", "max", "step", "color", "track", "live"), Children.NONE),
         "Input" to Kind(setOf("text", "placeholder", "color", "fontSize", "clear", "focus", "underline"), Children.NONE),
@@ -118,7 +119,8 @@ internal val SINCE =
         // apps and what their long-press menu does; long lists built as they scroll into view; the bar's search ranking;
         // an app that hides the status bar.
         listOf(PANEL_FILE, QUERY, "onKey", "android.drawer", "appAction", "workApps", "shortcuts", APP_STATUS_BAR).associateWith { 11 } +
-        listOf("Column.lazy", "Grid.lazy", "Column.reverse", "Grid.reverse", "Image.label", "Text.minLines", "rank", "strongMatch", "chunk").associateWith { 11 }
+        listOf("Column.lazy", "Grid.lazy", "Column.reverse", "Grid.reverse", "Image.label", "Text.minLines", "rank", "strongMatch", "chunk").associateWith { 11 } +
+        mapOf("Gba" to 12)
 
 internal const val FACE_FILE = "face \"…\" { }"
 

@@ -97,13 +97,14 @@ class TerminalTiles(
     val active: EmbeddedTerminal?
         get() {
             val focused = wm.focused ?: return null
-            return sessions.firstOrNull { it.window === focused }
+            return sessions.firstOrNull { !it.game && it.window === focused }
         }
 
     fun create(
         command: String?,
         fontSize: Double?,
-    ): EmbeddedTerminal = EmbeddedTerminal(this, "$APP_ID_PREFIX${nextId++}", command, fontSize).also { sessions += it }
+        game: Boolean = false,
+    ): EmbeddedTerminal = EmbeddedTerminal(this, "$APP_ID_PREFIX${nextId++}", command, fontSize, game).also { sessions += it }
 
     internal fun forget(term: EmbeddedTerminal) {
         sessions -= term
@@ -117,6 +118,7 @@ class TerminalTiles(
     }
 
     fun deactivate() {
+        sessions.filter { it.game }.forEach { it.pauseGame() }
         if (active != null) wm.focus(null)
         tile = null
         keyboard?.hide()
@@ -171,6 +173,16 @@ class TerminalTiles(
         term: EmbeddedTerminal,
         onExit: () -> Unit,
     ) {
+        if (term.game) {
+            runtime.launch(
+                "env SDL_VIDEODRIVER=wayland SDL_VIDEO_WAYLAND_WMCLASS=${shellQuote(term.appId)} " +
+                    "SDL_APP_ID=${shellQuote(term.appId)} SDL_RENDER_DRIVER=software " +
+                    "XDG_CONFIG_HOME=\"${'$'}HOME/.config/omalauncher/gba\" " +
+                    "mgba -- ${shellQuote(requireNotNull(term.command))}",
+                onExit,
+            )
+            return
+        }
         val font = term.fontSize?.let { " -o " + shellQuote("main.font=${runtime.terminalFont.family}:size=${TerminalFont.format(it)}") }.orEmpty()
         val command = term.command?.let { " -e bash -c " + shellQuote(it) }.orEmpty()
         runtime.launch("foot --app-id=${term.appId}$font$command", onExit)
@@ -226,6 +238,7 @@ class EmbeddedTerminal internal constructor(
     val appId: String,
     val command: String?,
     val fontSize: Double?,
+    val game: Boolean = false,
 ) {
     private val main = Handler(Looper.getMainLooper())
 
@@ -238,15 +251,68 @@ class EmbeddedTerminal internal constructor(
 
     private var closed = false
 
+    var gamePlaying by mutableStateOf(false)
+        private set
+    private val heldKeys = mutableSetOf<Int>()
+    private var gameRequested = false
+
+    /** These keys target this surface, never whichever app happens to have focus. */
+    fun gameKey(code: Int, down: Boolean) {
+        val w = window ?: return
+        if (down && !gamePlaying) return
+        if (down) {
+            if (!heldKeys.add(code)) return
+        } else if (!heldKeys.remove(code)) return
+        tiles.server.postInput {
+            setKeyboardFocus(w.surface)
+            key(code, down)
+        }
+    }
+
+    private fun togglePause() {
+        val w = window ?: return
+        tiles.server.postInput {
+            setKeyboardFocus(w.surface)
+            key(29, true) // Left Ctrl + P: mGBA SDL pause/resume.
+            key(25, true)
+            key(25, false)
+            key(29, false)
+        }
+    }
+
+    fun resumeGame() {
+        if (window == null || gamePlaying) return
+        gameRequested = true
+        togglePause()
+        gamePlaying = true
+    }
+
+    fun pauseGame() {
+        gameRequested = false
+        heldKeys.toList().forEach { gameKey(it, false) }
+        if (gamePlaying) togglePause()
+        gamePlaying = false
+        val surface = window?.surface
+        if (game && surface != null) tiles.server.postInput {
+            if (keyboardFocus === surface) setKeyboardFocus(null)
+        }
+    }
+
     /** Where the tile is, in window pixels, as if the home screen weren't lifted. */
     internal var bounds = Rect.Zero
 
     fun start() {
         if (running || closed) return
+        if (game) gameRequested = true
         running = true
         tiles.launch(this) {
             main.post {
                 running = false
+                if (game) {
+                    heldKeys.clear()
+                    gamePlaying = false
+                    if (closed) tiles.forget(this@EmbeddedTerminal)
+                }
                 window = null
             }
         }
@@ -254,17 +320,29 @@ class EmbeddedTerminal internal constructor(
 
     /** Ends the terminal (the widget was removed or changed); foot closes its shell. */
     fun close() {
+        pauseGame()
         closed = true
-        tiles.forget(this)
+        // Keep a closing game's app ID claimable until its process exits: the
+        // user may have changed ROM before SDL's first window arrived.
+        if (!game || !running) tiles.forget(this)
         window?.let(tiles::close)
     }
 
     internal fun attach(w: XdgToplevel) {
         // Closed while foot was still starting: it goes as soon as it shows up.
-        if (closed) tiles.close(w) else window = w
+        if (closed) tiles.close(w) else {
+            window = w
+            if (game) {
+                gamePlaying = true
+                // The page may have been left while the guest was starting.
+                if (!gameRequested) pauseGame()
+            }
+        }
     }
 
     internal fun detach() {
+        heldKeys.clear()
+        gamePlaying = false
         window = null
     }
 }
@@ -275,11 +353,13 @@ fun TerminalView(
     term: EmbeddedTerminal,
     modifier: Modifier,
     interactive: Boolean = true,
+    gameDisplay: Boolean = false,
+    autoStart: Boolean = true,
 ) {
     val tiles = term.tiles
     val window = term.window
     val active = tiles.active === term
-    LaunchedEffect(term) { term.start() }
+    LaunchedEffect(term, autoStart) { if (autoStart) term.start() }
     val background = Palette.background.toArgb()
     Box(modifier.onGloballyPositioned { term.bounds = it.boundsInWindow().translate(0f, tiles.lift) }) {
         AndroidView(
@@ -301,7 +381,7 @@ fun TerminalView(
                 ) {
                     BasicText(if (term.running) "starting…" else "exited · tap to restart", style = Mono.copy(color = Palette.muted, fontSize = TextSize.Small))
                 }
-            active -> {
+            active && !gameDisplay -> {
                 // Over the TextureView, which Compose's pointer input doesn't reach.
                 Box(Modifier.fillMaxSize().linuxWindowInput(tiles.windowManager, window))
                 Box(
@@ -326,7 +406,7 @@ fun TerminalView(
  * SurfaceView, but into a TextureView: it moves, clips and lifts with the
  * Compose tile around it (a SurfaceView would stay behind on its own layer).
  */
-private class EmbeddedWindowView(
+internal class EmbeddedWindowView(
     context: Context,
     private val tiles: TerminalTiles,
 ) : TextureView(context),

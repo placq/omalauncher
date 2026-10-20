@@ -150,6 +150,7 @@ interface Services {
     fun terminal(
         command: String?,
         fontSize: Double?,
+        game: Boolean = false,
     ): EmbeddedTerminal
 }
 
@@ -826,9 +827,10 @@ class WidgetInstance(
         node: Any,
         command: String?,
         fontSize: Double?,
+        game: Boolean = false,
     ): EmbeddedTerminal {
-        terminals[node]?.let { if (it.command == command && it.fontSize == fontSize) return it else it.close() }
-        return services.terminal(command, fontSize).also { terminals[node] = it }
+        terminals[node]?.let { if (it.command == command && it.fontSize == fontSize && it.game == game) return it else it.close() }
+        return services.terminal(command, fontSize, game).also { terminals[node] = it }
     }
 
     /** [term] is one of this widget's terminals. */
