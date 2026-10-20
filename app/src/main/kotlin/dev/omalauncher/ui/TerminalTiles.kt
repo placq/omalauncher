@@ -199,17 +199,8 @@ class TerminalTiles(
 
     internal fun close(window: XdgToplevel) = wm.close(window)
 
-    internal fun launchApp(term: EmbeddedTerminal, onExit: (Int, String) -> Unit): EmbeddedAppProcess? {
-        if (!runtime.linux) {
-            runtime.openSettings(SettingsPage.Linux)
-            onExit(-1, "Install Linux in settings first")
-            return null
-        }
-        return EmbeddedAppProcess(
-            { runtime.proot.process("exec ${requireNotNull(term.app).launch(term.appId)}") },
-            onExit,
-        ).also { it.start() }
-    }
+    internal fun launchApp(term: EmbeddedTerminal, onExit: (Int, String) -> Unit): EmbeddedAppProcess? =
+        runtime.launchEmbedded(requireNotNull(term.app).launch(term.appId), onExit)
 
     internal val server get() = runtime.server
     internal val windowManager get() = wm
