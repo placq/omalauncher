@@ -48,6 +48,9 @@ label **Pocket GBA Prototype**. Its private storage and Linux installation are
 separate from the original app. Provider authorities and explicit task affinities
 also use the build's application ID. CI checks the APK's ID before publishing it.
 The prototype face is bundled and seeded automatically in this build only.
+When Linux is installed in this variant, an additional bootstrap step installs
+mGBA, Lua and the library scanner dependencies and creates `~/Games/GBA`.
+It preserves the launcher's bind-mounted bwrap shim during package installation.
 It can be installed alongside the original launcher; do not uninstall the original.
 Launch it from its icon without making it the default home app for initial tests.
 Back up important data before experimenting. Private files and Linux packages from

@@ -71,7 +71,7 @@ android {
         }
     }
 
-    sourceSets.getByName("gba").assets.srcDir(layout.buildDirectory.dir("generated/gba-assets"))
+    sourceSets.getByName("gba").assets.srcDir(layout.buildDirectory.dir("generated/gba-assets").get().asFile)
 }
 
 // Seed the prototype face only in the isolated test app, never in normal builds.
