@@ -1,6 +1,6 @@
 face "pocket gba" {
   meta {
-    owl: 12
+    owl: 13
     description: "Prototype GBA library with an embedded mGBA window and multitouch controls; requires a patched launcher"
     version: "0.1"
     license: "MIT"

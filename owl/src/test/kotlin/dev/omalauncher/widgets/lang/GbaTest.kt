@@ -7,17 +7,17 @@ import org.junit.Test
 
 class GbaTest {
     @Test fun gbaNeedsPatchedLanguage() {
-        val message = error("""face "gba" { meta { owl: 11 }; Gba { rom: "/root/game.gba" } }""")
-        assertTrue(message.contains("12"))
+        val message = error("""face "gba" { meta { owl: 12 }; Gba { rom: "/root/game.gba" } }""")
+        assertTrue(message.contains("13"))
     }
 
     @Test fun gbaNeedsRom() {
-        assertTrue(error("""face "gba" { meta { owl: 12 }; Gba {} }""").contains("rom"))
+        assertTrue(error("""face "gba" { meta { owl: 13 }; Gba {} }""").contains("rom"))
     }
 
     @Test fun gbaCompilesAndRequiresLinux() {
         val p = Compiler.compile("""face "gba" {
-            meta { owl: 12 }
+            meta { owl: 13 }
             page: -1
             requires { pacman: ["mgba-sdl"] }
             state game = "/root/ROMs/a game.gba"

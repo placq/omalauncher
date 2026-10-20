@@ -1,10 +1,10 @@
 # Pocket GBA — experimental launcher patch
 
 This is source code for a modified Omalauncher, **not a face that works on the stock APK**.
-The experimental `Gba { rom: absolutePath }` node requires this fork's OWL level 12.
+The experimental `Gba { rom: absolutePath }` node requires this fork's OWL level 13.
 No commercial ROMs or BIOS files are included.
 
-Based on upstream commit `542c021bf4c1200162e4cf99bad34cd0264dcc22`.
+Includes upstream through `46b4d64` (official OWL 12); experimental Gba uses OWL 13.
 
 ## What the patch does
 
@@ -34,7 +34,7 @@ java -jar owl/build/cli/owl.jar check prototype/pocket-gba.owl
 
 The manual GitHub Actions workflow **GBA prototype APK** builds the APK including
 proot, runs tests and uploads an artifact. It must first exist in your own fork;
-this working copy has not been published or uploaded anywhere.
+the prototype fork is https://github.com/placq/omalauncher.
 
 On ARM Linux without Android SDK, run `python prototype/check-owl.py` to compile
 the language module, run its JVM tests and statically check the face. It downloads
