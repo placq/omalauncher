@@ -25,12 +25,17 @@ jobs:
       - name: Include Linux runtime
         run: ./scripts/fetch-proot.sh
       - name: Test and build
-        run: ./gradlew :owl:test :app:testDebugUnitTest :owl:owlJar :app:assembleDebug
+        run: ./gradlew :owl:test :app:testGbaUnitTest :owl:owlJar :app:assembleGba
+      - name: Verify isolated application ID
+        run: |
+          apk=app/build/outputs/apk/gba/app-gba.apk
+          package=$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$apk")
+          test "$package" = "dev.omalauncher.gba"
       - name: Check prototype face
         run: java -jar owl/build/cli/owl.jar check prototype/pocket-gba.owl
       - uses: actions/upload-artifact@v4
         with:
           name: pocket-gba-prototype
           path: |
-            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/gba/*.apk
             prototype/

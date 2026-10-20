@@ -19,6 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.omalauncher"
+        manifestPlaceholders["launcherLabel"] = "Omalauncher"
         minSdk = 29
         targetSdk = 37
         versionCode = 18
@@ -55,6 +56,13 @@ android {
     }
 
     buildTypes {
+        create("gba") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".gba"
+            versionNameSuffix = "-gba-prototype"
+            manifestPlaceholders["launcherLabel"] = "Pocket GBA Prototype"
+            matchingFallbacks += "debug"
+        }
         release {
             // Shrinks the APK and drops what the app doesn't use, like the owl module's unused parts.
             isMinifyEnabled = true
@@ -62,7 +70,16 @@ android {
             signingConfig = signingConfigs.getByName(if (uploadKey != null) "release" else "debug")
         }
     }
+
+    sourceSets.getByName("gba").assets.srcDir(layout.buildDirectory.dir("generated/gba-assets"))
 }
+
+// Seed the prototype face only in the isolated test app, never in normal builds.
+val gbaFaceAssets = tasks.register<Copy>("generateGbaFaceAssets") {
+    from(rootProject.file("prototype/pocket-gba.owl"))
+    into(layout.buildDirectory.dir("generated/gba-assets/widgets"))
+}
+tasks.matching { it.name == "mergeGbaAssets" }.configureEach { dependsOn(gbaFaceAssets) }
 
 // ExamplesTest reads the widget examples and the README from here, so editing them reruns it.
 tasks.withType<Test>().configureEach { inputs.dir("src/main/assets/widgets") }

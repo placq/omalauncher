@@ -28,7 +28,7 @@ The `:owl` module needs a Java 17 toolchain, which Gradle can provision.
 
 ```sh
 ./scripts/fetch-proot.sh
-./gradlew :owl:test :app:testDebugUnitTest :owl:owlJar :app:assembleDebug
+./gradlew :owl:test :app:testGbaUnitTest :owl:owlJar :app:assembleGba
 java -jar owl/build/cli/owl.jar check prototype/pocket-gba.owl
 ```
 
@@ -43,13 +43,20 @@ compile the Android/Compose changes or test emulation.
 
 ## Installation safety
 
-The debug APK uses `dev.omalauncher`, like the installed launcher, but has a
-different signing key from Play releases. Android will normally reject an
-in-place update. **Do not uninstall your launcher just to try this prototype:**
-that can delete its private Linux installation and settings. Back up first, and
-prefer testing on a spare device or a separate Android profile where available.
-Changing the application ID alone is not sufficient to promise isolation: some
-existing integration paths and authorities may also need adjustment.
+The **Gba** APK uses a separate application ID, `dev.omalauncher.gba`, and the
+label **Pocket GBA Prototype**. Its private storage and Linux installation are
+separate from the original app. Provider authorities and explicit task affinities
+also use the build's application ID. CI checks the APK's ID before publishing it.
+The prototype face is bundled and seeded automatically in this build only.
+It can be installed alongside the original launcher; do not uninstall the original.
+Launch it from its icon without making it the default home app for initial tests.
+Back up important data before experimenting. Private files and Linux packages from
+the original installation are not automatically available in this separate app.
+
+The earlier `app-debug.apk` uses the original package ID and is **not** the
+side-by-side build. Use `app-gba.apk` instead. Debug signing keys created on fresh
+CI runners can differ, so future test APKs may not update previous prototype
+installs without a persistent signing key. This does not affect the original app.
 
 Once the modified launcher is installed in a safe test environment:
 
