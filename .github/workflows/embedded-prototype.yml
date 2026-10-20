@@ -3,7 +3,7 @@ name: Linux face prototype APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, feature/linuxapp-lifecycle]
     paths:
       - 'app/**'
       - 'owl/**'
@@ -38,14 +38,32 @@ jobs:
           apk=app/build/outputs/apk/embedded/app-embedded.apk
           package=$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest application-id "$apk")
           test "$package" = "dev.omalauncher.embedded"
+      - name: Verify complete Linux payload
+        run: |
+          python3 - <<'PYCODE'
+          import zipfile
+          apk = "app/build/outputs/apk/embedded/app-embedded.apk"
+          required = {"libproot.so", "libproot-loader.so", "libtalloc.so", "libandroid-shmem.so", "libwlbridge.so"}
+          with zipfile.ZipFile(apk) as archive:
+              missing = required - {path.rsplit("/", 1)[-1] for path in archive.namelist() if path.startswith("lib/arm64-v8a/")}
+              if missing:
+                  raise SystemExit(f"Incomplete device-test APK; missing: {sorted(missing)}")
+          print("Full arm64 Linux runtime verified")
+          PYCODE
       - name: Check demo face
         run: java -jar owl/build/cli/owl.jar check prototype/linux-app.owl
       - name: Check self-contained demo
         run: python prototype/test-demo.py
+      - name: Package device test bundle
+        run: |
+          mkdir -p dist/linux-face-prototype/prototype
+          cp app/build/outputs/apk/embedded/app-embedded.apk dist/linux-face-prototype/
+          cp prototype/DEVICE-TESTS.md dist/linux-face-prototype/README-TESTING.md
+          cp prototype/collect-linuxapp-logs.sh prototype/linux-app.owl prototype/linux-app-demo.py dist/linux-face-prototype/prototype/
+          printf 'commit=%s\napplicationId=dev.omalauncher.embedded\nlinuxRuntime=verified\n' "$GITHUB_SHA" > dist/linux-face-prototype/BUILD.txt
+          (cd dist/linux-face-prototype && sha256sum app-embedded.apk > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
           name: linux-face-prototype
-          path: |
-            app/build/outputs/apk/embedded/*.apk
-            prototype/
+          path: dist/linux-face-prototype/
           if-no-files-found: error
