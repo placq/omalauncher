@@ -565,13 +565,13 @@ class Runtime(
     }
 
     /** A cancellable foreground client owned by an embedded window, with the same Linux-ready gate as launch. */
-    fun launchEmbedded(command: String, onExit: (Int, String) -> Unit): EmbeddedAppProcess? {
+    fun launchEmbedded(command: String, onStopTimeout: () -> Unit, onExit: (Int, String) -> Unit): EmbeddedAppProcess? {
         if (!linux) {
             openSettings(SettingsPage.Linux)
             onExit(-1, "Install Linux in settings first")
             return null
         }
-        return EmbeddedAppProcess({ proot.process("exec $command") }, onExit).also { it.start() }
+        return EmbeddedAppProcess({ proot.process("exec $command") }, onStopTimeout = onStopTimeout, onExit = onExit).also { it.start() }
     }
 
     /** Starts a command inside the guest; its output goes to logcat. Returns at once; [onExit] runs on the launch thread. */

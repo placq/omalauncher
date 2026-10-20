@@ -956,6 +956,17 @@ loss release input. The × button stops the program, including during startup;
 tap the node to restart. Exit errors show recent command output. Removing the
 widget or changing its command/ID closes its window and cancels its process.
 Leaving its page keeps it running, without any application-specific pause.
+A hidden conditional node or an item removed from a list also retains its session
+until the widget is removed/reloaded or its command/ID changes when rendered again;
+use × before hiding a program you want to stop. In a `for`, give each item a stable
+`key` so reordering keeps the correct session. Repeated component uses have
+independent sessions, including when their commands are identical.
+
+Stopping keeps the session reserved until its process actually exits. If it takes
+more than three seconds, the node reports that stopping is incomplete; it does not
+start a second copy. The launcher avoids forcibly killing just proot, which can
+leave guest processes behind. Error output is bounded even for programs that write
+long lines without line breaks.
 
 Only one toplevel per node is embedded, using the existing Wayland renderer;
 additional windows open normally. This is not Android app embedding or X11

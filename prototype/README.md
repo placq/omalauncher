@@ -61,7 +61,19 @@ face "window smoke test" {
 - Removing the widget, changing its command/ID or stopping its instance closes
   its window and cancels its owned process. Late windows during cancellation are
   closed instead of opening an independent task. Process errors show the last
-  few output lines in the node, and offer retry by tapping.
+  few output lines in the node, and offer retry by tapping. Output is bounded
+  while it is read, including lines without newline characters.
+- Sessions in keyed loops and repeated component uses are independent. A stable
+  `for ... key ...` keeps the session attached to its item after reordering.
+  Drag-preview copies and returning to a page reuse the same session.
+- Hiding a conditional node or removing a list item retains its session until the
+  widget is removed/reloaded, or until a changed command/ID is next rendered for
+  that path. Stop it with × before hiding it when termination is desired.
+- Stop is asynchronous. After three seconds without process exit, the node reports
+  that stopping is incomplete and keeps the ID reserved. It releases ownership
+  only after actual process termination. It never sends SIGKILL just to proot:
+  doing so may orphan its guest processes. Device tests must verify that the
+  pinned proot terminates the owned guest tree on SIGTERM.
 - One toplevel is embedded per node. Additional toplevel windows open normally;
   existing Wayland popups continue to use the renderer's popup support.
 
@@ -114,7 +126,14 @@ is available, exercises its rendering and input using SDL's dummy video driver.
    Confirm sizing, rendering and input ownership remain correct.
 4. Stop/restart, remove/re-add, and edit the command while starting. No stray
    task or process should remain. Test a missing executable and retry.
-5. Run two auto-ID nodes and confirm their input stays separate; test duplicate
+5. Run two auto-ID nodes, two instances of a component, and keyed loop items.
+   Reorder the list and confirm sessions and input stay separate; test duplicate
    explicit IDs and an ID mismatch. Check ordinary Terminal nodes still work.
+6. Hold a touch or a mouse button while pressing Back, changing pages, locking
+   or switching apps. Confirm the client receives cancellation/release and that
+   the next window receives no events from the old gesture.
+7. Verify a stopping process retains its app ID until actual exit, with a visible
+   diagnostic after a timeout. Confirm ordinary stop/restart reaps all guest
+   descendants; host process tests alone do not establish proot behaviour.
 
 Compilation and host tests alone do not establish these device behaviours.

@@ -831,35 +831,31 @@ class WidgetInstance(
      * Terminal nodes' sessions, by node. They keep running while the tile is
      * off screen, and end with the widget or when their command changes.
      */
-    private val terminals = HashMap<Any, EmbeddedTerminal>()
+    private data class SessionConfiguration(
+        val command: String?,
+        val fontSize: Double? = null,
+        val graphical: Boolean = false,
+        val appId: String? = null,
+    )
 
-    fun terminal(
-        node: Any,
-        command: String?,
-        fontSize: Double?,
-    ): EmbeddedTerminal {
-        terminals[node]?.let { if (it.app == null && it.command == command && it.fontSize == fontSize) return it else it.close() }
-        return services.terminal(command, fontSize).also { terminals[node] = it }
-    }
+    private val terminals = NodeSessions<EmbeddedTerminal> { it.close() }
 
-    fun linuxApp(node: Any, command: String, appId: String?): EmbeddedTerminal {
-        terminals[node]?.let {
-            val app = it.app
-            if (app != null && app.command == command && app.appId == appId) return it
-            it.close()
+    fun terminal(node: Any, command: String?, fontSize: Double?): EmbeddedTerminal =
+        terminals.get(node, SessionConfiguration(command, fontSize)) { services.terminal(command, fontSize) }
+
+    fun linuxApp(node: Any, command: String, appId: String?): EmbeddedTerminal =
+        terminals.get(node, SessionConfiguration(command, graphical = true, appId = appId)) {
+            services.linuxApp(command, appId)
         }
-        return services.linuxApp(command, appId).also { terminals[node] = it }
-    }
 
     /** [term] is one of this widget's terminals. */
-    fun owns(term: EmbeddedTerminal?) = term != null && term in terminals.values
+    fun owns(term: EmbeddedTerminal?) = terminals.owns(term)
 
     fun stop() {
         services.sound(this, null, null)
         jobs.forEach { it.cancel() }
         jobs.clear()
-        terminals.values.forEach { it.close() }
-        terminals.clear()
+        terminals.close()
         // A change made during the write interval would otherwise be lost.
         if (persisted.isNotEmpty()) save(persisted.map { read(it) })
     }

@@ -199,8 +199,8 @@ class TerminalTiles(
 
     internal fun close(window: XdgToplevel) = wm.close(window)
 
-    internal fun launchApp(term: EmbeddedTerminal, onExit: (Int, String) -> Unit): EmbeddedAppProcess? =
-        runtime.launchEmbedded(requireNotNull(term.app).launch(term.appId), onExit)
+    internal fun launchApp(term: EmbeddedTerminal, onStopTimeout: () -> Unit, onExit: (Int, String) -> Unit): EmbeddedAppProcess? =
+        runtime.launchEmbedded(requireNotNull(term.app).launch(term.appId), onStopTimeout, onExit)
 
     internal val server get() = runtime.server
     internal val windowManager get() = wm
@@ -263,7 +263,8 @@ class EmbeddedTerminal internal constructor(
         private set
 
     private var closed = false
-    private var stopping = false
+    var stopping by mutableStateOf(false)
+        private set
     private var process: EmbeddedAppProcess? = null
 
     var error by mutableStateOf<String?>(null)
@@ -283,11 +284,17 @@ class EmbeddedTerminal internal constructor(
         stopping = false
         running = true
         if (app != null) {
-            process = tiles.launchApp(this) { code, output ->
+            process = tiles.launchApp(this, onStopTimeout = {
+                main.post {
+                    if (running && stopping && !closed) error = "Still stopping: the Linux process has not exited. Restart is available after it exits."
+                }
+            }) { code, output ->
                 main.post {
                     process = null
                     running = false
+                    if (stopping) error = null
                     if (!closed && !stopping && code != 0) error = output.ifBlank { "Command exited with code $code" }
+                    stopping = false
                     window = null
                     if (closed) tiles.forget(this@EmbeddedTerminal)
                 }
@@ -315,6 +322,7 @@ class EmbeddedTerminal internal constructor(
     /** Ends the session when the widget is removed or its command changes. */
     fun close() {
         closed = true
+        if (tiles.active === this) tiles.deactivate()
         // Keep the ID claimable while a starting client is being cancelled, so
         // a late window is closed rather than escaping into its own Android task.
         if (!running) tiles.forget(this)
@@ -375,6 +383,7 @@ fun TerminalView(
                     contentAlignment = Alignment.Center,
                 ) {
                     val status = term.error ?: when {
+                        term.stopping -> "stopping…"
                         term.running && term.app == null -> "starting…"
                         term.running -> "waiting for Wayland window…\napp_id: ${term.appId}"
                         !term.launched -> "tap to start Linux app"
@@ -398,6 +407,13 @@ fun TerminalView(
                 }
             }
             interactive -> Box(Modifier.fillMaxSize().pointerInput(term) { detectTapGestures { tiles.activate(term) } })
+        }
+        if (term.app != null && term.error != null && window != null) {
+            BasicText(
+                term.error.orEmpty(),
+                modifier = Modifier.align(Alignment.BottomStart).background(Palette.overlay).padding(6.dp),
+                style = Mono.copy(color = Palette.muted, fontSize = TextSize.Small),
+            )
         }
         if (term.app != null && term.running) {
             Box(
